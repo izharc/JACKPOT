@@ -1,0 +1,233 @@
+import React, { useState, useEffect } from 'react';
+import { Coins, Zap, Crown, Diamond, Cherry, Grape } from 'lucide-react';
+
+const SlotMachine = () => {
+  const [reels, setReels] = useState(['🍒', '🍒', '🍒']);
+  const [spinning, setSpinning] = useState(false);
+  const [balance, setBalance] = useState(1000);
+  const [bet, setBet] = useState(10);
+  const [lastWin, setLastWin] = useState(0);
+  const [jackpotWin, setJackpotWin] = useState(false);
+  const [spinCount, setSpinCount] = useState(0);
+
+  const symbols = ['🍒', '🍋', '🍊', '🍇', '🔔', '⭐', '💎', '🍀'];
+  
+  const symbolValues = {
+    '🍒': 2,
+    '🍋': 3,
+    '🍊': 4,
+    '🍇': 5,
+    '🔔': 10,
+    '⭐': 15,
+    '💎': 25,
+    '🍀': 50
+  };
+
+  const spin = () => {
+    if (balance < bet || spinning) return;
+    
+    setSpinning(true);
+    setBalance(balance - bet);
+    setJackpotWin(false);
+    setLastWin(0);
+    setSpinCount(prev => prev + 1);
+
+    // אנימציית סיבוב
+    let spinDuration = 0;
+    const spinInterval = setInterval(() => {
+      setReels([
+        symbols[Math.floor(Math.random() * symbols.length)],
+        symbols[Math.floor(Math.random() * symbols.length)],
+        symbols[Math.floor(Math.random() * symbols.length)]
+      ]);
+      spinDuration += 100;
+      
+      if (spinDuration >= 2000) {
+        clearInterval(spinInterval);
+        
+        // תוצאה סופית
+        const finalReels = [
+          symbols[Math.floor(Math.random() * symbols.length)],
+          symbols[Math.floor(Math.random() * symbols.length)],
+          symbols[Math.floor(Math.random() * symbols.length)]
+        ];
+        
+        setReels(finalReels);
+        setSpinning(false);
+        
+        // חישוב זכייה
+        setTimeout(() => {
+          calculateWin(finalReels);
+        }, 500);
+      }
+    }, 100);
+  };
+
+  const calculateWin = (finalReels) => {
+    let winAmount = 0;
+    
+    // 3 סמלים זהים = ג'קפוט!
+    if (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]) {
+      if (finalReels[0] === '💎') {
+        winAmount = bet * 100; // ג'קפוט יהלומים!
+        setJackpotWin(true);
+      } else {
+        winAmount = bet * symbolValues[finalReels[0]] * 3;
+        if (winAmount >= bet * 50) setJackpotWin(true);
+      }
+    }
+    // 2 סמלים זהים
+    else if (finalReels[0] === finalReels[1] || finalReels[1] === finalReels[2] || finalReels[0] === finalReels[2]) {
+      const matchingSymbol = finalReels[0] === finalReels[1] ? finalReels[0] : 
+                           finalReels[1] === finalReels[2] ? finalReels[1] : finalReels[0];
+      winAmount = bet * symbolValues[matchingSymbol];
+    }
+    
+    if (winAmount > 0) {
+      setLastWin(winAmount);
+      setBalance(prev => prev + winAmount);
+    }
+  };
+
+  const resetGame = () => {
+    setBalance(1000);
+    setLastWin(0);
+    setJackpotWin(false);
+    setSpinCount(0);
+    setReels(['🍒', '🍒', '🍒']);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-red-900 to-yellow-900 flex items-center justify-center p-4">
+      <div className="bg-gradient-to-b from-yellow-400 to-yellow-600 p-8 rounded-3xl shadow-2xl border-8 border-yellow-300 max-w-md w-full">
+        
+        {/* כותרת */}
+        <div className="text-center mb-6">
+          <h1 className="text-4xl font-bold text-red-800 mb-2 drop-shadow-lg">
+            🎰 ג'קפוט מזל 🎰
+          </h1>
+          <div className="flex justify-center items-center gap-2 text-green-800 font-bold text-xl">
+            <Coins className="w-6 h-6" />
+            <span>₪{balance}</span>
+          </div>
+        </div>
+
+        {/* מסך התוצאות */}
+        <div className="bg-black rounded-xl p-6 mb-6 border-4 border-silver">
+          <div className="flex justify-center items-center gap-4 mb-4">
+            {reels.map((symbol, index) => (
+              <div
+                key={index}
+                className={`text-6xl bg-white rounded-lg w-20 h-20 flex items-center justify-center border-4 border-gray-300 ${
+                  spinning ? 'animate-bounce' : ''
+                } ${jackpotWin ? 'animate-pulse border-yellow-400' : ''}`}
+              >
+                {symbol}
+              </div>
+            ))}
+          </div>
+          
+          {/* הודעות זכייה */}
+          {lastWin > 0 && (
+            <div className={`text-center ${jackpotWin ? 'text-yellow-400 text-3xl animate-pulse' : 'text-green-400 text-xl'} font-bold`}>
+              {jackpotWin && <div className="flex justify-center mb-2">
+                <Crown className="w-8 h-8 text-yellow-400" />
+                <span className="mx-2">ג'קפוט!</span>
+                <Crown className="w-8 h-8 text-yellow-400" />
+              </div>}
+              זכית ₪{lastWin}!
+            </div>
+          )}
+        </div>
+
+        {/* פקדי הימור */}
+        <div className="bg-red-700 rounded-xl p-4 mb-6 border-4 border-red-500">
+          <div className="flex items-center justify-between mb-4 text-white">
+            <span className="font-bold">הימור:</span>
+            <span className="text-xl font-bold">₪{bet}</span>
+          </div>
+          <div className="flex gap-2 mb-4">
+            {[5, 10, 25, 50, 100].map(amount => (
+              <button
+                key={amount}
+                onClick={() => setBet(amount)}
+                disabled={spinning}
+                className={`px-3 py-2 rounded-lg font-bold transition-all ${
+                  bet === amount 
+                    ? 'bg-yellow-400 text-red-800 scale-110' 
+                    : 'bg-white text-red-800 hover:bg-yellow-200'
+                } disabled:opacity-50`}
+              >
+                ₪{amount}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* כפתור סיבוב */}
+        <button
+          onClick={spin}
+          disabled={spinning || balance < bet}
+          className={`w-full py-4 rounded-2xl text-2xl font-bold transition-all duration-300 ${
+            spinning 
+              ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
+              : balance < bet
+              ? 'bg-red-400 text-red-800 cursor-not-allowed'
+              : 'bg-green-500 text-white hover:bg-green-600 active:scale-95 shadow-lg hover:shadow-xl'
+          }`}
+        >
+          {spinning ? (
+            <div className="flex items-center justify-center gap-2">
+              <Zap className="w-6 h-6 animate-spin" />
+              מסתובב...
+            </div>
+          ) : balance < bet ? (
+            'אין מספיק כסף!'
+          ) : (
+            <div className="flex items-center justify-center gap-2">
+              <span>סובב!</span>
+              <Diamond className="w-6 h-6" />
+            </div>
+          )}
+        </button>
+
+        {/* סטטיסטיקות */}
+        <div className="mt-4 text-center text-sm text-red-800">
+          <p>סיבובים: {spinCount}</p>
+          {balance <= 0 && (
+            <button
+              onClick={resetGame}
+              className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              התחל מחדש
+            </button>
+          )}
+        </div>
+
+        {/* טבלת זכיות */}
+        <details className="mt-4">
+          <summary className="text-red-800 font-bold cursor-pointer text-center">
+            טבלת זכיות 📋
+          </summary>
+          <div className="mt-2 bg-white rounded-lg p-3 text-sm">
+            <div className="grid grid-cols-2 gap-1 text-center">
+              <div className="font-bold">סמל</div>
+              <div className="font-bold">זכייה</div>
+              {Object.entries(symbolValues).map(([symbol, value]) => (
+                <React.Fragment key={symbol}>
+                  <div>{symbol}</div>
+                  <div>x{value}</div>
+                </React.Fragment>
+              ))}
+            </div>
+            <p className="text-xs text-gray-600 mt-2 text-center">
+              3 סמלים זהים = זכייה x3 | 💎💎💎 = ג'קפוט x100!
+            </p>
+          </div>
+        </details>
+      </div>
+    </div>
+  );
+};
+
+export default SlotMachine;
